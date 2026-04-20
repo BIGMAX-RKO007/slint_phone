@@ -1,0 +1,15 @@
+{
+  "name": "slint_phone",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "slint_phone_bg.wasm",
+    "slint_phone.js",
+    "slint_phone.d.ts"
+  ],
+  "main": "slint_phone.js",
+  "types": "slint_phone.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SlintPhone — Slint Web Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: system-ui, sans-serif;
+            color: #e0e0e0;
+            flex-direction: column;
+            gap: 20px;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 300;
+            letter-spacing: 0.1em;
+            opacity: 0.7;
+        }
+        canvas {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 0 40px rgba(100, 100, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <h1>SLINT_PHONE — Slint Web Demo</h1>
+    <!-- Slint 渲染目标：必须有一个 id="canvas" 的 canvas 元素 -->
+    <canvas id="canvas"></canvas>
+    <script type="module">
+        import init from "./pkg/slint_phone.js";
+        init().catch(console.error);
+    </script>
+</body>
+</html>
