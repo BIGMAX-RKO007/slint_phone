@@ -1,26 +1,315 @@
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, ScrollView, ListView } from "std-widgets.slint";
 
-// export component AppWindow 定义了主窗口组件及其名称，它将被编译成同名的 Rust 结构体
-export component AppWindow inherits Window {
-    // 定义一个属性 counter，类型为 int，默认值为 42。
-    // in-out 表示这个属性既可以被 Rust 后端修改，也可以在 UI 脚本内部修改。
-    in-out property <int> counter: 42;
+global Theme {
+    out property <color> bg-primary: #000000;
+    out property <color> accent: #FFC400; // 骚黄 (Vibrant Cyberpunk Yellow)
+    out property <color> text-primary: #FFFFFF;
+    out property <color> text-secondary: #9A9A9A;
+    out property <color> text-muted: #666666;
+    out property <color> status-error: #E51400;
+}
 
-    // 声明一个回调函数，这相当于定义了一个接口，具体逻辑将在 Rust 中实现
-    callback request-increase-value();
+// 扁平化按键
+component MetroButton inherits Rectangle {
+    in property <string> text;
+    callback clicked <=> touch.clicked;
 
-    VerticalBox {
+    background: touch.pressed ? Theme.accent.darker(0.2) : Theme.accent;
+    height: 48px;
+    
+    touch := TouchArea {}
+
+    Text {
+        text: root.text;
+        color: Theme.bg-primary; // 为了在骚黄背景上看清，按钮文字用纯黑
+        font-size: 16px;
+        font-weight: 700;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// 磁贴组件
+component MetroTile inherits Rectangle {
+    in property <string> title;
+    in property <string> count;
+    in property <bool> is-large: false;
+    callback clicked <=> touch.clicked;
+
+    background: touch.pressed ? Theme.accent.darker(0.2) : Theme.accent;
+    width: root.is-large ? 100% : 48%;
+    height: 120px;
+    
+    touch := TouchArea {}
+
+    VerticalLayout {
+        padding: 12px;
         Text {
-            // \{...} 是字符串插值语法，当 root.counter 变化时，文本会自动更新
-            text: "Counter: \{root.counter}";
+            text: root.count;
+            font-size: 36px;
+            font-weight: 800;
+            color: Theme.bg-primary;
+            horizontal-alignment: left;
+        }
+        Rectangle { } // Spacer
+        Text {
+            text: root.title;
+            font-size: 16px;
+            font-weight: 700;
+            color: Theme.bg-primary;
+            horizontal-alignment: left;
+        }
+    }
+}
+
+// 列表项组件
+component MetroListItem inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    callback clicked <=> touch.clicked;
+
+    height: 64px;
+    background: touch.pressed ? Theme.text-muted.transparentize(0.8) : transparent;
+    
+    touch := TouchArea {}
+
+    VerticalLayout {
+        padding-top: 8px;
+        padding-bottom: 8px;
+        Text {
+            text: root.title;
+            font-size: 22px;
+            color: Theme.text-primary;
+        }
+        Text {
+            text: root.subtitle;
+            font-size: 14px;
+            color: Theme.text-secondary;
+        }
+    }
+}
+
+// 设置项 Toggle
+component MetroSettingItem inherits Rectangle {
+    in property <string> title;
+    in-out property <bool> active: false;
+    
+    height: 56px;
+    
+    HorizontalLayout {
+        Text {
+            text: root.title;
+            font-size: 20px;
+            color: Theme.text-primary;
+            vertical-alignment: center;
+        }
+        Rectangle {} // Spacer
+        Rectangle {
+            width: 50px;
+            height: 24px;
+            background: root.active ? Theme.accent : transparent;
+            border-color: root.active ? Theme.accent : Theme.text-secondary;
+            border-width: 2px;
+            y: (parent.height - self.height) / 2;
+            
+            Rectangle {
+                width: 14px;
+                height: 18px;
+                x: root.active ? parent.width - self.width - 3px : 3px;
+                y: 1px;
+                background: root.active ? Theme.bg-primary : Theme.text-secondary;
+            }
+            
+            TouchArea {
+                clicked => { root.active = !root.active; }
+            }
+        }
+    }
+}
+
+export component AppWindow inherits Window {
+    // ---- 后端绑定的接口 ----
+    in-out property <int> counter: 42;
+    callback request-increase-value();
+    // ------------------------
+
+    property <int> active-tab: 0; // 0: OVERVIEW, 1: TASKS, 2: SETTINGS
+    property <bool> show-detail: false;
+    property <string> detail-title: "";
+
+    background: Theme.bg-primary;
+    preferred-width: 380px;
+    preferred-height: 680px;
+    icon: @image-url("logo.png");
+
+    // ---- Detail Page 详情页 ----
+    if root.show-detail: Rectangle {
+        z: 100;
+        background: Theme.bg-primary;
+        VerticalLayout {
+            padding: 16px;
+            spacing: 24px;
+            
+            // Header: Back button + Title
+            HorizontalLayout {
+                spacing: 16px;
+                Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    Text {
+                        text: "←";
+                        font-size: 24px;
+                        font-weight: 700;
+                        color: Theme.text-primary;
+                        vertical-alignment: center;
+                    }
+                    TouchArea {
+                        clicked => { root.show-detail = false; }
+                    }
+                }
+                Text {
+                    text: root.detail-title;
+                    font-size: 32px;
+                    font-weight: 800;
+                    color: Theme.text-primary;
+                    vertical-alignment: center;
+                }
+            }
+            
+            // Body
+            Text {
+                text: "Here is the detailed content for " + root.detail-title + ".\n\nYou can place any detailed information, properties, or actions here. Metro design dictates keeping this area clean and using typography to structure the information. Note the accent color accents throughout the UI.";
+                color: Theme.text-primary;
+                font-size: 16px;
+                wrap: word-wrap;
+            }
+            
+            Rectangle {} // 弹性占位，把按钮推到最下面
+            
+            MetroButton {
+                text: "ACTION CONFIRM";
+                clicked => { root.show-detail = false; }
+            }
+        }
+    }
+
+    // ---- Main Pivot Page 主页 ----
+    if !root.show-detail: VerticalLayout {
+        padding: 16px;
+        spacing: 16px;
+
+        // App Title
+        Text {
+            text: "SLINT PHONE";
+            font-size: 12px;
+            font-weight: 800;
+            color: Theme.text-primary;
+            letter-spacing: 2px;
         }
 
-        Button {
-            text: "Increase value";
-            // clicked 是按钮的内置属性，当用户点击时执行以下闭包
-            clicked => {
-                // 触发我们在上面定义的回调，将控制权交给 Rust 后端
-                root.request-increase-value();
+        // Pivot Headers "OVERVIEW   TASKS   SETTINGS"
+        // 使用 ScrollView 使导航可以横向滚动
+        ScrollView {
+            height: 50px;
+            HorizontalLayout {
+                spacing: 24px;
+                
+                Text {
+                    text: "OVERVIEW";
+                    font-size: 36px;
+                    font-weight: 800;
+                    color: root.active-tab == 0 ? Theme.text-primary : Theme.text-muted;
+                    TouchArea { clicked => { root.active-tab = 0; } }
+                }
+                Text {
+                    text: "TASKS";
+                    font-size: 36px;
+                    font-weight: 800;
+                    color: root.active-tab == 1 ? Theme.text-primary : Theme.text-muted;
+                    TouchArea { clicked => { root.active-tab = 1; } }
+                }
+                Text {
+                    text: "SETTINGS";
+                    font-size: 36px;
+                    font-weight: 800;
+                    color: root.active-tab == 2 ? Theme.text-primary : Theme.text-muted;
+                    TouchArea { clicked => { root.active-tab = 2; } }
+                }
+            }
+        }
+
+        // Pivot Content: OVERVIEW
+        if root.active-tab == 0: ScrollView {
+            VerticalLayout {
+                spacing: 12px;
+                
+                MetroTile {
+                    is-large: true;
+                    title: "Counter Demo (Click me)";
+                    count: "\{root.counter}";
+                    clicked => { root.request-increase-value(); }
+                }
+
+                HorizontalLayout {
+                    spacing: 12px;
+                    MetroTile {
+                        title: "Emails";
+                        count: "12";
+                        clicked => { root.detail-title = "Emails"; root.show-detail = true; }
+                    }
+                    MetroTile {
+                        title: "Messages";
+                        count: "3";
+                        clicked => { root.detail-title = "Messages"; root.show-detail = true; }
+                    }
+                }
+            }
+        }
+
+        // Pivot Content: TASKS
+        if root.active-tab == 1: ScrollView {
+            VerticalLayout {
+                MetroListItem {
+                    title: "Design Metro UI Plan";
+                    subtitle: "Due Today - Important";
+                    clicked => { root.detail-title = "Metro Design"; root.show-detail = true; }
+                }
+                MetroListItem {
+                    title: "Implement Tile Component";
+                    subtitle: "Due Tomorrow";
+                    clicked => { root.detail-title = "Tile Component"; root.show-detail = true; }
+                }
+                MetroListItem {
+                    title: "Review PR #42";
+                    subtitle: "No deadline";
+                    clicked => { root.detail-title = "Review PR #42"; root.show-detail = true; }
+                }
+            }
+        }
+
+        // Pivot Content: SETTINGS
+        if root.active-tab == 2: ScrollView {
+            VerticalLayout {
+                spacing: 8px;
+                
+                Text {
+                    text: "SYSTEM";
+                    color: Theme.accent;
+                    font-size: 14px;
+                    font-weight: 700;
+                }
+                MetroSettingItem { title: "Wi-Fi"; active: true; }
+                MetroSettingItem { title: "Bluetooth"; active: false; }
+                MetroSettingItem { title: "Location services"; active: true; }
+                
+                Rectangle { height: 16px; } // spacer
+                Text {
+                    text: "THEME";
+                    color: Theme.accent;
+                    font-size: 14px;
+                    font-weight: 700;
+                }
+                MetroSettingItem { title: "Dark background"; active: true; }
             }
         }
     }

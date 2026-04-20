@@ -23,6 +23,7 @@ lto = true
 
 [package.metadata.android]
 apk_label = "SlintPhone"
+icon = "ui/logo.png"
 compile_sdk_version = 34
 target_sdk_version = 34
 min_sdk_version = 24
