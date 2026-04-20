@@ -1,0 +1,27 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+
+// export component AppWindow 定义了主窗口组件及其名称，它将被编译成同名的 Rust 结构体
+export component AppWindow inherits Window {
+    // 定义一个属性 counter，类型为 int，默认值为 42。
+    // in-out 表示这个属性既可以被 Rust 后端修改，也可以在 UI 脚本内部修改。
+    in-out property <int> counter: 42;
+
+    // 声明一个回调函数，这相当于定义了一个接口，具体逻辑将在 Rust 中实现
+    callback request-increase-value();
+
+    VerticalBox {
+        Text {
+            // \{...} 是字符串插值语法，当 root.counter 变化时，文本会自动更新
+            text: "Counter: \{root.counter}";
+        }
+
+        Button {
+            text: "Increase value";
+            // clicked 是按钮的内置属性，当用户点击时执行以下闭包
+            clicked => {
+                // 触发我们在上面定义的回调，将控制权交给 Rust 后端
+                root.request-increase-value();
+            }
+        }
+    }
+}

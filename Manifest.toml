@@ -1,0 +1,11 @@
+[package]
+name = "slint_phone"
+label = "SlintPhone"
+version = "0.1.0"
+version_code = 1
+
+[android]
+package = "com.slint.slint_phone"
+target_sdk_version = 34
+min_sdk_version = 24
+# icon = "ui/logo.png" # 暂时没有图标，注释掉避免 xbuild 报错

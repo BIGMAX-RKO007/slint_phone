@@ -1,0 +1,162 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  # 1. 构建 Windows 桌面端
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Build Windows
+        working-directory: .
+        run: cargo build --release
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slint-phone-windows-x64
+          path: target/release/slint_phone.exe
+
+  # 2. 构建 Android APK (使用 xbuild)
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+          
+      - name: Install xbuild
+        run: cargo install --git https://github.com/rust-mobile/xbuild.git
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev llvm
+
+      - name: Build Android APK
+        working-directory: .
+        run: |
+          # 使用 Runner 自带的 NDK 路径
+          export ANDROID_NDK_ROOT=$ANDROID_NDK_LATEST_HOME
+          x build --platform android --arch arm64 --format apk --release
+
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slint-phone-android-arm64
+          path: target/x/release/android/**/*.apk
+
+  # 3. 构建 Web 端 (WASM)
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1-dev llvm
+
+      - name: Build WASM
+        working-directory: .
+        run: wasm-pack build --release --target web
+
+      - name: Prepare Website Files
+        run: |
+          mkdir public
+          cp index.html public/
+          cp -r pkg public/
+
+      - name: Upload Web Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: slint-phone-web-pkg
+          path: public/
+
+  # 4. 发布到 GitHub Pages (仅限 push 到 main)
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Download Web Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: slint-phone-web-pkg
+          path: public
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+
+  # 5. 创建 GitHub Release (Tag 或 push 到 main 时触发)
+  create-release:
+    needs: [build-windows, build-android]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: slint-phone-windows-x64
+          path: artifacts
+
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: slint-phone-android-arm64
+          path: artifacts
+
+      - name: Rename Artifacts
+        run: |
+          mv artifacts/slint_phone.exe artifacts/slint-phone-windows-x64.exe
+          mv artifacts/slint_phone.apk artifacts/slint-phone-android-arm64.apk
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 如果是 tag 则使用 tag 名，否则使用 latest
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'latest' }}
+          name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'Latest Build (Rolling)' }}
+          draft: false
+          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          make_latest: true
+          files: |
+            artifacts/slint-phone-windows-x64.exe
+            artifacts/slint-phone-android-arm64.apk
+          generate_release_notes: true
