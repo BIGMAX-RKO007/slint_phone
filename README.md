@@ -178,7 +178,13 @@ rustup target add aarch64-linux-android
 
 # 连接设备并运行（需要 cargo-apk）
 cargo apk run --target aarch64-linux-android --lib
+cargo apk run --target aarch64-linux-android --lib --release
+
 ```
+方法二：使用 xbuild (跨平台构建工具)
+x devices
+x run --device <id>
+x build --platform android --arch arm64 --format apk --release
 
 ---
 
