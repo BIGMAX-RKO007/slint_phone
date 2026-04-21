@@ -27,12 +27,12 @@ export interface InitOutput {
     readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_3: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_5: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_6: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_5: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_6: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_7: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_8: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_9: (a: number, b: number, c: any) => void;
-    readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_10: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_9: (a: number, b: number, c: any) => void;
+    readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_10: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_11: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h0e14c616c535c519_12: (a: number, b: number, c: any) => void;
     readonly wasm_bindgen__convert__closures_____invoke__h2a2bf34df7a1051d_13: (a: number, b: number, c: any) => void;

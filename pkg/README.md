@@ -178,7 +178,13 @@ rustup target add aarch64-linux-android
 
 # 连接设备并运行（需要 cargo-apk）
 cargo apk run --target aarch64-linux-android --lib
+cargo apk run --target aarch64-linux-android --lib --release
+
 ```
+方法二：使用 xbuild (跨平台构建工具)
+x devices
+x run --device <id>
+x build --platform android --arch arm64 --format apk --release
 
 ---
 
@@ -379,3 +385,30 @@ Step 5 ── [全平台验证]
 ---
 
 *文档版本：v1.1 · 新增：MECE 诚实记录 / 构建管道 IPO / 变更影响矩阵 / 测试策略 / 扩展流程*
+
+---
+
+## 十三、常见踩坑记录 (Troubleshooting)
+
+### Android 平台：自定义应用图标与应用名不生效的问题
+
+**症状**：你在 `Cargo.toml` 中配置了 `[package.metadata.android]` 下的 `apk_label` 和 `icon` 属性，但打包出 APK 后，安装到手机上不仅显示的是默认的安卓蓝绿小人，应用桌面里显示的名字也全都是代码结构里默认的英文小写（如 `slint_phone`）。
+
+**原因（`cargo-apk` 与 `android-activity` 兼容性巨坑）**：
+由于 Slint 的 Android 后端引擎采用的是相对底层的 `android-activity` crate，在此套件接管 JNI 和生命周期后，原版 `cargo-apk` 对打包清单 (`AndroidManifest.xml`) 标签生成机制发生了非常严苛的变化。它要求将应用的显示属性放在更加特定的 `application` 子表中！写在 `[package.metadata.android]` 下的基础 `icon` 参数会被完全**静默丢弃**。
+
+**解决办法**：
+必须在 `Cargo.toml` 中提供精确到 `[package.metadata.android.application]` 层级的映射。同时，推荐图标搭配多分辨率文件夹 (mipmap) 加载，以规避不同厂商启动器的图片解码水土不服：
+
+```toml
+# 第一步：仅用于指定 res 资源目录所在的相对位置
+[package.metadata.android]
+resources = "res"
+
+# 第二步：将具体的桌面展示属性独立配置到专用子表中
+[package.metadata.android.application]
+label = "SlintPhone"           # 控制桌面显示正确的应用名称
+icon = "@mipmap/ic_launcher"   # 使用标准安卓引用方法让系统读取 res/mipmap-* 下的 PNG
+```
+
+*(注意：请确保你已在项目根目录中建立了 `res/mipmap-mdpi` 乃至 `xxxhdpi` 各大尺寸的高清 `.png` 资源)*
