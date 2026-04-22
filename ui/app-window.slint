@@ -131,6 +131,11 @@ export component AppWindow inherits Window {
     // ---- 后端绑定的接口 ----
     in-out property <int> counter: 42;
     callback request-increase-value();
+    
+    // ASR Properties
+    in-out property <string> transcript_text: "";
+    in-out property <string> ai_response: "";
+    in-out property <bool> is_listening: false;
     // ------------------------
 
     property <int> active-tab: 0; // 0: OVERVIEW, 1: TASKS, 2: SETTINGS
@@ -310,6 +315,42 @@ export component AppWindow inherits Window {
                     font-weight: 700;
                 }
                 MetroSettingItem { title: "Dark background"; active: true; }
+            }
+        }
+        
+        // ---- 实时字幕区域 ----
+        Rectangle {
+            height: 80px;
+            background: Theme.bg-primary;
+            border-color: Theme.accent;
+            border-width: 1px;
+
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 8px;
+                
+                // 录音状态指示灯
+                VerticalLayout {
+                    alignment: start;
+                    Rectangle {
+                        width: 12px;
+                        height: 12px;
+                        border-radius: 6px;
+                        background: root.is-listening ? Theme.status-error : Theme.text-muted;
+                        // 简单的闪烁动画效果（录音时高亮）
+                        animate background { duration: 500ms; easing: ease-in-out; }
+                    }
+                }
+
+                // 滚动字幕文本
+                ScrollView {
+                    Text {
+                        text: root.transcript_text;
+                        color: Theme.accent;
+                        font-size: 14px;
+                        wrap: word-wrap;
+                    }
+                }
             }
         }
     }

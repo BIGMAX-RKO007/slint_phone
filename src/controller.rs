@@ -28,6 +28,39 @@ pub fn run() -> Result<(), slint::PlatformError> {
     // ── INPUT：实例化 UI 组件（使用 Layer 1 编译期生成的 AppWindow 类型）──
     let ui = crate::AppWindow::new()?;
 
+    // ======== STT (ASR) 感知层链路集成 ========
+    let (tx, rx) = std::sync::mpsc::channel();
+    let asr_engine = crate::logic::AsrEngine::new("models/asr");
+    asr_engine.start(tx);
+    
+    ui.set_is_listening(true);
+    let ui_weak_asr = ui.as_weak();
+    
+    std::thread::spawn(move || {
+        let mut buffer = String::new();
+        // 持续接收 ASR 文字结果
+        while let Ok(text) = rx.recv() {
+            buffer.push_str(&text);
+            
+            // 简单截断：保留最新 100 个字符
+            if buffer.chars().count() > 100 {
+                let start_idx = buffer.char_indices().nth(buffer.chars().count() - 100).map(|(i, _)| i).unwrap_or(0);
+                buffer = buffer[start_idx..].to_string();
+            }
+            
+            let buffer_clone = buffer.clone();
+            let ui_weak = ui_weak_asr.clone();
+            
+            // 安全地推向主线程渲染
+            let _ = slint::invoke_from_event_loop(move || {
+                if let Some(ui) = ui_weak.upgrade() {
+                    ui.set_transcript_text(buffer_clone.into());
+                }
+            });
+        }
+    });
+    // ==========================================
+
     // ── PROCESS：绑定 UI 事件到业务逻辑路由 ──
     //
     // 模式：每一个 UI 事件绑定块的内部结构严格遵循 IPO：
